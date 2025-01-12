@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
+import { afterNextRender, Component, DestroyRef, inject, viewChild } from '@angular/core';
 import { FormsModule, NgForm } from '@angular/forms';
+import { debounceTime } from 'rxjs';
 
 @Component({
   selector: 'app-login',
@@ -9,14 +10,36 @@ import { FormsModule, NgForm } from '@angular/forms';
   styleUrl: './login.component.css',
 })
 export class LoginComponent {
+  private form = viewChild.required<NgForm>('form');
+  private destroyRef = inject(DestroyRef);
 
-onSubmit(formData: NgForm) {0
-  if (formData.invalid) {
-    return;
+  constructor() {
+    afterNextRender(() => {
+      const savedForm = window.localStorage.getItem('saved-login-form');
+      if (savedForm) {
+        const loadedEmail = JSON.parse(savedForm).email;
+        setTimeout(() => {
+          this.form().controls['email'].setValue(loadedEmail); 
+      }, 1);
+    }
+
+      const subscription = this.form().
+      valueChanges?.pipe(debounceTime(500)).
+      subscribe( {
+        next:(value) => window.localStorage.setItem('saved-login-form', 
+          JSON.stringify({ email: value.email })),
+      });
+      this.destroyRef.onDestroy(() => subscription?.unsubscribe());
+    })
+  }  
+
+  onSubmit(formData: NgForm) {0
+    if (formData.invalid) {
+      return;
+    }
+    const enteredEmail = formData.form.value.email;
+    const enteredPassword = formData.form.value.password;
+
+    formData.form.reset();0
   }
-  const enteredEmail = formData.form.value.email;
-  const enteredPassword = formData.form.value.password;
-}
-
-
 }
